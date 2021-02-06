@@ -1,5 +1,6 @@
 module Lib
     ( someFunc
+    , readExpr
     ) where
 
 import Text.ParserCombinators.Parsec hiding (spaces)

@@ -1,2 +1,8 @@
+import Lib
+import Test.QuickCheck
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = do --unit tests
+    putStrLn ""
+    putStrLn $ if readExpr "#" == "Found value" then "OK" else "FAIL"
+    return ()
