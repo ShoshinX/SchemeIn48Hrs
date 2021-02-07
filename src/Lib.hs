@@ -9,6 +9,7 @@ import Control.Monad
 import Numeric
 import Data.Ratio
 import Data.Complex
+import Data.Array
 
 symbol :: Parser Char
 symbol = oneOf "!$%&|*+-/:<=>?@^_~"
@@ -32,6 +33,7 @@ data LispVal
     | Float Double
     | Ratio Rational
     | Complex (Complex Double)
+    | Vector (Array Int LispVal)
 -- Constructors and types have different namespaces, so you can have both a constructor named String and a type named String. Both types and constructor tags always begin with capital letters.
 
 parseString :: Parser LispVal
@@ -144,6 +146,66 @@ parseExpr = parseAtom
          <|> try parseNumber -- try is there because of the hash char
          <|> try parseBool
          <|> try parseCharacter
+         <|> parseQuoted
+         <|> try (do    string "#("
+                        x <- parseVector
+                        char ')'
+                        return x)
+         <|> do char '('
+                x <- try parseList <|> parseDottedList
+                char ')'
+                return x
+         <|> parseQuasiQuoted
+         <|> parseUnQuote
+         <|> parseUnQuoteSplicing
+
+
+parseList :: Parser LispVal
+parseList = between beg end parseList1
+    where   beg = (char '(' >> skipMany space)
+            end = (skipMany space >> char ')')
+
+parseList1 :: Parser LispVal
+parseList1 = do list <- sepEndBy parseExpr spaces
+                maybeDatum <- optionMaybe (char '.' >> spaces >> parseExpr)
+                return $ case maybeDatum of
+                    Nothing -> List list
+                    Just datum -> DottedList list datum
+
+parseDottedList :: Parser LispVal
+parseDottedList = do
+    head <- endBy parseExpr spaces
+    tail <- char '.' >> spaces >> parseExpr
+    return $ DottedList head tail
+
+parseQuoted :: Parser LispVal
+parseQuoted = do
+    char '\''
+    x <- parseExpr
+    return $ List [Atom "quote", x]
+
+parseQuasiQuoted :: Parser LispVal
+parseQuasiQuoted = do
+    char '`'
+    x <- parseExpr
+    return $ List [Atom "quasiquote", x]
+
+parseUnQuote :: Parser LispVal
+parseUnQuote = do
+    char ','
+    x <- parseExpr
+    return $ List [Atom "unquote", x]
+
+parseUnQuoteSplicing :: Parser LispVal
+parseUnQuoteSplicing = do
+    char ','
+    char '@'
+    x <- parseExpr
+    return $ List [Atom "unquote-splicing", x]
+
+parseVector :: Parser LispVal
+parseVector = do    arrayValues <- sepBy parseExpr spaces
+                    return $ Vector (listArray (0, (length arrayValues - 1)) arrayValues)
 
 
 someFunc :: IO ()
