@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 09cac12a6d8badb9d4666fa968a6eb8122d99c83ec934ca2180115bf6c4b0aba
+-- hash: 822c3c3771edea7adc195cd4ea3cb2a2b35d49fe273e07806582d37dd5f1cf9c
 
 name:           schemeIn48Hrs
 version:        0.1.0.0
@@ -27,7 +27,10 @@ source-repository head
 
 library
   exposed-modules:
+      Common
+      Evaluator
       Lib
+      Parser
   other-modules:
       Paths_schemeIn48Hrs
   hs-source-dirs:
