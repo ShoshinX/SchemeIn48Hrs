@@ -37,17 +37,87 @@ primitives =[("+", numericBinop (+))
             ,("/", numericBinop div)
             ,("mod", numericBinop mod)
             ,("quotient", numericBinop quot)
-            ,("remainder", numericBinop rem)]
+            ,("remainder", numericBinop rem)
+            ,("boolean?", unaryOp boolP)
+            ,("pair?", unaryOp pairP)
+            ,("list?", unaryOp listP)
+            ,("vector?", unaryOp vectorP)
+            ,("symbol?", unaryOp symbolP)
+            ,("string?", unaryOp stringP)
+            ,("char?", unaryOp charP)
+            ,("number?", unaryOp numberP)
+            ,("complex?", unaryOp complexP)
+            ,("rational?", unaryOp rationalP)
+            ,("integer?", unaryOp integerP)
+            ,("procedure?", unaryOp procedureP)
+            ,("symbol->string", unaryOp symToStr)
+            ,("string->symbol", unaryOp strToSym)
+            ]
+
+unaryOp :: (LispVal -> LispVal) -> [LispVal] -> LispVal
+unaryOp f [v] = f v
+
+boolP :: LispVal -> LispVal
+boolP (Bool _)  = Bool True
+boolP _         = Bool False
+
+pairP :: LispVal -> LispVal
+pairP (DottedList _ _)  = Bool True
+pairP _                 = Bool False
+
+listP :: LispVal -> LispVal
+listP (List _)  = Bool True
+listP _         = Bool False
+
+vectorP :: LispVal -> LispVal
+vectorP (Vector _) = Bool True
+vectorP _          = Bool False
+
+symbolP :: LispVal -> LispVal
+symbolP (Atom _) = Bool True
+symbolP _        = Bool False
+
+stringP :: LispVal -> LispVal
+stringP (String _) = Bool True
+stringP _          = Bool False
+
+charP :: LispVal -> LispVal
+charP (Character _) = Bool True
+charP _             = Bool False
+
+numberP :: LispVal -> LispVal
+numberP (Number _) = Bool True
+numberP (Ratio _) = Bool True
+numberP (Complex _) = Bool True
+numberP _          = Bool False
+
+complexP :: LispVal -> LispVal
+complexP (Complex _) = Bool True
+complexP _           = Bool False
+
+rationalP :: LispVal -> LispVal
+rationalP (Ratio _) = Bool True
+rationalP _         = Bool False
+
+integerP :: LispVal -> LispVal
+integerP (Number _) = Bool True
+integerP _          = Bool False
+
+procedureP :: LispVal -> LispVal
+procedureP (List (Atom _:_)) = Bool True
+procedureP _               = Bool False
 
 numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> LispVal
 numericBinop op params = Number $ foldl1 op $ map unpackNum params
 
 unpackNum :: LispVal -> Integer
 unpackNum (Number n) = n
-unpackNum (String n) = let parsed =  reads n :: [(Integer, String)] in
-                            if null parsed
-                                then 0
-                                else fst $ parsed !! 0
-                                
-unpackNum (List [n]) = unpackNum n
 unpackNum _ = 0
+
+symToStr :: LispVal -> LispVal
+symToStr (Atom x) = String x
+symToStr _        = String ""
+
+strToSym :: LispVal -> LispVal
+strToSym (String x) = Atom x
+strToSym _        = String ""
