@@ -132,10 +132,7 @@ parseExpr = parseAtom
                         x <- parseVector
                         char ')'
                         return x)
-         <|> do char '('
-                x <- try parseList <|> parseDottedList
-                char ')'
-                return x
+         <|> parseList
          <|> parseQuasiQuoted
          <|> parseUnQuote
          <|> parseUnQuoteSplicing
