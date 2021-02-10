@@ -6,13 +6,18 @@ module Lib
 import Text.ParserCombinators.Parsec hiding (spaces)
 import System.Environment
 import Parser (parseExpr)
-import Evaluator (showVal, eval)
+import Evaluator 
 import Common
+import Error
+import Control.Monad.Except
 
-readExpr :: String -> LispVal
+readExpr :: String -> ThrowsError LispVal
 readExpr input = case parse parseExpr "lisp" input of
-    Left err -> String $ "No match: " ++ show err
-    Right val ->  val
+    Left err -> throwError $ Parser err
+    Right val ->  return val
 
 someFunc :: IO ()
-someFunc = getArgs >>= print . eval . readExpr . head
+someFunc = do
+        args <- getArgs
+        evaled <- return $ liftM show $ readExpr (args !! 0) >>= eval
+        putStrLn $ extractValue $ trapError evaled

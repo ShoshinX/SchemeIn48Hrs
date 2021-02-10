@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 822c3c3771edea7adc195cd4ea3cb2a2b35d49fe273e07806582d37dd5f1cf9c
+-- hash: 57b4a4de01f5bc17ffccd47861da0a42fc062040576096d6eb8126b044dac3f8
 
 name:           schemeIn48Hrs
 version:        0.1.0.0
@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       Common
+      Error
       Evaluator
       Lib
       Parser
@@ -38,6 +39,7 @@ library
   build-depends:
       array
     , base >=4.7 && <5
+    , mtl
     , parsec
   default-language: Haskell2010
 
@@ -51,6 +53,7 @@ executable schemeIn48Hrs-exe
   build-depends:
       array
     , base >=4.7 && <5
+    , mtl
     , parsec
     , schemeIn48Hrs
   default-language: Haskell2010
@@ -67,6 +70,7 @@ test-suite schemeIn48Hrs-test
       QuickCheck
     , array
     , base >=4.7 && <5
+    , mtl
     , parsec
     , schemeIn48Hrs
   default-language: Haskell2010

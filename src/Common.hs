@@ -1,5 +1,7 @@
 module Common
     ( LispVal(..)
+    , unwordsList
+    , showVal
     ) where
 
 import Numeric
@@ -20,3 +22,17 @@ data LispVal
     | Complex (Complex Double)
     | Vector (Array Int LispVal)
 -- Constructors and types have different namespaces, so you can have both a constructor named String and a type named String. Both types and constructor tags always begin with capital letters.
+
+unwordsList :: [LispVal] -> String
+unwordsList = unwords . map showVal
+
+showVal :: LispVal -> String
+showVal (String contents) = "\"" ++ contents ++ "\""
+showVal (Atom name) = name
+showVal (Number contents) = show contents
+showVal (Bool True) = "#t"
+showVal (Bool False) = "#f"
+showVal (List contents) = "(" ++ unwordsList contents ++ ")"
+showVal (DottedList head tail) = "(" ++ unwordsList head ++ " . " ++ showVal tail ++ ")"
+
+instance Show LispVal where show = showVal
