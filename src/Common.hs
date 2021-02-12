@@ -21,6 +21,7 @@ data LispVal
     | Ratio Rational
     | Complex (Complex Double)
     | Vector (Array Int LispVal)
+    deriving Eq
 -- Constructors and types have different namespaces, so you can have both a constructor named String and a type named String. Both types and constructor tags always begin with capital letters.
 
 unwordsList :: [LispVal] -> String
