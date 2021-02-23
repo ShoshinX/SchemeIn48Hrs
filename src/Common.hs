@@ -6,6 +6,8 @@ import Data.Complex
 import Data.Array
 import Text.ParserCombinators.Parsec hiding (spaces)
 import Data.IORef
+import Control.Monad.Except
+import System.IO
     
 data LispVal 
     = Atom String
@@ -22,6 +24,8 @@ data LispVal
     | PrimitiveFunc ([LispVal] -> ThrowsError LispVal)
     | Func {params :: [String], vararg :: (Maybe String),
             body :: [LispVal], closure :: Env}
+    | IOFunc ([LispVal] -> IOThrowsError LispVal) 
+    | Port Handle
 -- Constructors and types have different namespaces, so you can have both a constructor named String and a type named String. Both types and constructor tags always begin with capital letters.
 instance Eq LispVal where
     (Atom x) == (Atom y) = x == y
@@ -56,6 +60,8 @@ showVal (Func {params = args, vararg = varargs, body = body, closure = env}) =
         (case varargs of
             Nothing -> ""
             Just arg -> " . " ++ arg) ++ ") ...)"
+showVal (Port _) = "<IO port>"
+showVal (IOFunc _) = "<IO primitive>"
 
 instance Show LispVal where show = showVal
 
@@ -69,6 +75,7 @@ data LispError  = NumArgs Integer [LispVal]
 
 type ThrowsError = Either LispError
 type Env = IORef [(String, IORef LispVal)]
+type IOThrowsError = ExceptT LispError IO
 
 showError :: LispError -> String
 showError (UnboundVar message varname)  = message ++ ": " ++ varname
@@ -79,3 +86,5 @@ showError (TypeMismatch expected found) = "Invalid type: expected " ++ expected 
 showError (Parser parseErr)             = "Parse error at " ++ show parseErr
 
 instance Show LispError where show = showError
+
+

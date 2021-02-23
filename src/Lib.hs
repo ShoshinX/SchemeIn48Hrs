@@ -13,18 +13,11 @@ import Control.Monad.Except
 import System.IO
 import VarAssign
 
-readExpr :: String -> ThrowsError LispVal
-readExpr input = case parse parseExpr "lisp" input of
-    Left err -> throwError $ Parser err
-    Right val ->  return val
 
 someFunc :: IO ()
 someFunc = do
         args <- getArgs
-        case length args of
-            0 -> runRepl
-            1 -> runOne $ args !! 0
-            otherwise -> putStrLn "Program takes only 0 or 1 argument"
+        if null args then runRepl else runOne $ args
 
 -- Repl functions
 flushStr :: String -> IO ()
@@ -46,8 +39,16 @@ until_ pred prompt action = do
         then return ()
         else action result >> until_ pred prompt action
 
-runOne :: String -> IO ()
-runOne expr = primitiveBindings >>= flip evalAndPrint expr
+runOne :: [String] -> IO ()
+runOne args = do
+    env <- primitiveBindings >>= flip bindVars [("args", List $ map String $ drop 1 args)]
+    (runIOThrows $ liftM show $ eval env (List [Atom "load", String (args !! 0)]))
+        >>= hPutStrLn stderr
+readOrThrow :: Parser a -> String -> ThrowsError a
+readOrThrow parser input = case parse parser "lisp" input of
+    Left err -> throwError $ Parser err
+    Right val -> return val
+
 
 runRepl :: IO ()
 runRepl = primitiveBindings >>= until_ (== "quit") (readPrompt "Lisp>>> ") . evalAndPrint

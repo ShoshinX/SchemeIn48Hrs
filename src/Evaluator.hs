@@ -8,6 +8,8 @@ import Control.Monad.Except
 import Error
 import Data.IORef
 import VarAssign
+import System.IO
+import Parser
 
 eval :: Env -> LispVal -> IOThrowsError LispVal
 eval env val@(String _) = return val
@@ -20,6 +22,7 @@ eval env (List [Atom "if", pred, conseq , alt]) =
             Bool False  -> eval env alt
             Bool True   -> eval env conseq
             _           -> throwError $ TypeMismatch "bool" pred
+eval env (List [Atom "load", String filename]) = load filename >>= liftM last . mapM (eval env)
 eval env (List [Atom "quote", val]) = return val
 eval env form@(List (Atom "cond" : clauses)) =
     if null clauses
@@ -69,10 +72,11 @@ apply (Func params varargs body closure) args =
           bindVarArgs arg env = case arg of
             Just argName -> liftIO $ bindVars env [(argName, List $ remainingArgs)]
             Nothing -> return env
+apply (IOFunc func) args = func args
 
 primitiveBindings :: IO Env
-primitiveBindings = nullEnv >>= (flip bindVars $ map makePrimitiveFunc primitives)
-    where makePrimitiveFunc (var, func) = (var, PrimitiveFunc func)
+primitiveBindings = nullEnv >>= (flip bindVars $ map (makeFunc IOFunc) ioPrimitives ++ map (makeFunc PrimitiveFunc) primitives)
+    where makeFunc constructor (var, func) = (var, constructor func)
 
 primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
 primitives =[("+", numericBinop (+))
@@ -118,6 +122,54 @@ primitives =[("+", numericBinop (+))
             ,("string-length?", stringLen)
             ,("string-ref?", stringRef)
             ]
+
+ioPrimitives :: [(String, [LispVal] -> IOThrowsError LispVal)]
+ioPrimitives =  [("apply", applyProc)
+                ,("open-input-file", makePort ReadMode)
+                ,("open-output-file", makePort WriteMode)
+                ,("close-input-file", closePort)
+                ,("close-output-file", closePort)
+                ,("read", readProc)
+                ,("write", writeProc)
+                ,("read-contents", readContents)
+                ,("read-all", readAll)
+                ]
+
+applyProc :: [LispVal] -> IOThrowsError LispVal
+applyProc [func, List args] = apply func args
+applyProc (func:args)       = apply func args
+
+makePort :: IOMode -> [LispVal] -> IOThrowsError LispVal
+makePort mode [String filename] = liftM Port $ liftIO $ openFile filename mode
+
+closePort :: [LispVal] -> IOThrowsError LispVal
+closePort [Port port] = liftIO $ hClose port >> (return $ Bool True)
+closePort _           = return $ Bool False
+
+readProc :: [LispVal] -> IOThrowsError LispVal
+readProc [] = readProc [Port stdin]
+readProc [Port port] = (liftIO $ hGetLine port) >>= liftThrows . readExpr
+
+writeProc :: [LispVal] -> IOThrowsError LispVal
+writeProc [obj] = writeProc [obj, Port stdout]
+writeProc [obj, Port port] = liftIO $ hPrint port obj >> (return $ Bool True)
+
+readContents :: [LispVal] -> IOThrowsError LispVal
+readContents [String filename] = liftM String $ liftIO $ readFile filename
+
+readOrThrow :: Parser a -> String -> ThrowsError a
+readOrThrow parser input = case parse parser "lisp" input of
+    Left err -> throwError $ Parser err
+    Right val -> return val
+readExpr  = readOrThrow parseExpr
+readExprList = readOrThrow (endBy parseExpr spaces) 
+
+load :: String -> IOThrowsError [LispVal]
+load filename = (liftIO $ readFile filename) >>= liftThrows . readExprList
+
+readAll :: [LispVal] -> IOThrowsError LispVal
+readAll [String filename] = liftM List $ load filename
+
 stringLen :: [LispVal] -> ThrowsError LispVal
 stringLen [(String s)] = Right $ Number $ fromIntegral $ length s
 stringLen [notString]  = throwError $ TypeMismatch "string" notString
