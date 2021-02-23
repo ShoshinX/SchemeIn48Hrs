@@ -5,7 +5,6 @@ import Common
 import Error
 import Control.Monad.Except
 
-type Env = IORef [(String, IORef LispVal)]
 
 nullEnv :: IO Env
 nullEnv = newIORef []
