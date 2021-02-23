@@ -1,6 +1,5 @@
 module Lib
     ( someFunc
-    , readExpr
     ) where
 
 import Text.ParserCombinators.Parsec hiding (spaces)
@@ -44,10 +43,6 @@ runOne args = do
     env <- primitiveBindings >>= flip bindVars [("args", List $ map String $ drop 1 args)]
     (runIOThrows $ liftM show $ eval env (List [Atom "load", String (args !! 0)]))
         >>= hPutStrLn stderr
-readOrThrow :: Parser a -> String -> ThrowsError a
-readOrThrow parser input = case parse parser "lisp" input of
-    Left err -> throwError $ Parser err
-    Right val -> return val
 
 
 runRepl :: IO ()

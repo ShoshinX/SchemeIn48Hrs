@@ -59,12 +59,7 @@ parseBool = do
     (char 't' >> return (Bool True)) <|> (char 'f' >> return (Bool False))
 
 parseNumber :: Parser LispVal
-parseNumber = 
-    --do -- ex1.1.1
-    --s <- many1 digit
-    --return $ (Number . read) s
-    --many1 digit >>= \x -> (return . Number . read) x -- ex1.1.2
-    parseDecimal1 <|> parseDecimal2 <|> parseHex <|> parseOct <|> parseBin
+parseNumber = parseDecimal1 <|> parseDecimal2 <|> parseHex <|> parseOct <|> parseBin
 
 parseDecimal1 :: Parser LispVal
 parseDecimal1 = many1 digit >>= (return . Number . read)
